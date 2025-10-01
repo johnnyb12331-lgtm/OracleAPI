@@ -30,6 +30,31 @@ const authLimiter = rateLimit({
   legacyHeaders: false
 });
 
+// Separate, more lenient limiter for token refresh operations
+const refreshTokenLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 30, // Allow 30 refresh attempts per 5 minutes per IP
+  message: { status: 'error', message: 'Too many token refresh attempts. Please wait before trying again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // If we can identify the user, rate limit per user instead of IP
+    const refreshToken = req.body?.refreshToken;
+    if (refreshToken) {
+      try {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.decode(refreshToken);
+        if (decoded?.userId) {
+          return `refresh_user:${decoded.userId}`;
+        }
+      } catch (e) {
+        // Fall back to IP-based limiting if token decode fails
+      }
+    }
+    return ipKeyGenerator(req);
+  }
+});
+
 // Generic strict limiter for write-heavy endpoints (posts, comments, messages)
 const writeActionLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
@@ -47,5 +72,6 @@ module.exports = {
   globalApiLimiter,
   globalSlowDown,
   authLimiter,
+  refreshTokenLimiter,
   writeActionLimiter
 };
