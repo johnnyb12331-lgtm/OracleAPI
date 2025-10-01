@@ -5,6 +5,8 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 
+require('dotenv').config();
+
 // Create HTTP server first
 const server = http.createServer(app);
 
