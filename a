@@ -1,0 +1,62 @@
+const Logoutx = (req, res) => {
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+
+  db.query("DELETE FROM refresh_tokens WHERE token = ?", [token], (err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.status(200).json({ message: 'Logout successful' });
+  });
+};
+
+
+
+
+
+
+//client secret google web Client secret = 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
+
+
+
+
+
+
+
+/*static Future<String?> login(String email, String password) async {
+  final response = await http.post(
+    Uri.parse('$_baseUrl/login'),
+    headers: {'Content-Type': 'application/json'},
+    body: json.encode({'email': email, 'password': password}),
+  );
+
+  final data = json.decode(response.body);
+
+  if (response.statusCode == 200) {
+    final userId = data['userId'] ?? data['user_id'] ?? data['user']['id'];
+    final message = data['message'] ?? 'Login successful';
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_id', userId.toString());
+
+    return message;
+  } else {
+    // Here return error message from server
+    return data['error'] ?? 'Login failed';
+  }
+}
+
+
+//walid@yahoo.com
+
+  static Future<String> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_id') ?? '';
+  }
+
+  static Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_id');
+  }*/
