@@ -9,7 +9,7 @@ const mongoose = require('mongoose');
 const fs = require('fs').promises;
 const { optimizeImage, validateImage, validateVideo, optimizeVideo } = require('../utils/imageOptimizer');
 const { baseUrl } = require('../server');
-const BASE_URL = baseUrl || 'http://192.168.40.197:3001';
+const BASE_URL = baseUrl || 'http://167.71.97.187';
 
 const createStory = async (req, res) => {
   const startTime = Date.now();
