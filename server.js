@@ -54,12 +54,12 @@ const socketEmitter = require('./utils/socketEmitter');
 socketEmitter.setIO(io);
 
 // Configure CORS properly - only use cors() middleware to avoid duplicate headers
-app.use(cors({
+/*app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
   credentials: true
-}));
+}));*/
 
 // Body payload limits (already set; keep as-is)
 app.use(express.json({ limit: '10mb' }));
