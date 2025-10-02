@@ -52,20 +52,21 @@ let redisAvailable = false;
 console.log('Redis disabled - Chat functionality will work without Redis');
 const socketEmitter = require('./utils/socketEmitter');
 socketEmitter.setIO(io);
-app.use(cors());
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
+
+// Configure CORS properly - only use cors() middleware to avoid duplicate headers
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+  credentials: true
+}));
+
 // Body payload limits (already set; keep as-is)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Serve uploads BEFORE other static files to ensure images are served correctly
+app.use('/uploads', express.static('uploads'));
 
 // Serve Flutter web app static files
 app.use(express.static(path.join(__dirname, '../reeltalk/build/web')));
@@ -76,8 +77,6 @@ const { globalApiLimiter, globalSlowDown, authLimiter, writeActionLimiter } = re
 // Apply global slowdown & rate limiter to all API routes
 app.use('/api', globalSlowDown);
 app.use('/api', globalApiLimiter);
-
-app.use('/uploads', express.static('uploads'));
 
 const authRoutes = require('./routes/authRoute');
 const socialRoutes = require('./routes/socialRoute');
