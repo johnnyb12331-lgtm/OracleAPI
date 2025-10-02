@@ -41,7 +41,7 @@ const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 const customIP = '0.0.0.0';
 
 // Create base URL for API responses
-const baseUrl = process.env.BASE_URL || `http://167.71.97.187`;
+const { baseUrl } = require('./config/baseUrl');
 
 const Redis = require('ioredis');
 

@@ -13,7 +13,10 @@ const { optimizeImage, validateImage, handleDataUrlImage } = require('../utils/i
 const CommentCache = require('../utils/commentCache');
 const contentModerationService = require('../services/contentModerationService');
 const gamificationController = require('./gamificationController');
-const { baseUrl } = require('../server');
+const { baseUrl } = require('../config/baseUrl');
+
+// Debug: Log baseUrl when module loads
+console.log('🔗 POSTS CONTROLLER - baseUrl loaded:', baseUrl);
 
 // Configure multer for memory storage (we'll process images in memory)
 const storage = multer.memoryStorage();
