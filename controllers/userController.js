@@ -111,6 +111,28 @@ const getUserMe = async (req, res) => {
   }
 };
 
+const getProfileStatus = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    const userData = await UserData.findOne({ userId: new mongoose.Types.ObjectId(userId) })
+      .select('isProfileComplete name dateOfBirth gender avatar');
+    
+    const isComplete = !!userData?.isProfileComplete;
+    
+    console.log(`[getProfileStatus] User ${userId} profile complete: ${isComplete}`);
+    
+    res.status(200).json({
+      status: 'success',
+      isProfileComplete: isComplete,
+      hasUserData: !!userData
+    });
+  } catch (err) {
+    console.error('[getProfileStatus] Error:', err);
+    return res.status(500).json({ status: 'error', message: 'Database error' });
+  }
+};
+
 const getFollowerCount = async (req, res) => {
   const userId = req.params.userId;
 
@@ -598,6 +620,7 @@ const deleteProfileMedia = async (req, res) => {
 
 module.exports = { 
   getUserMe,
+  getProfileStatus,
   getFollowerCount,
   getFollowingCount,
   getLikesCount,

@@ -9,6 +9,9 @@ router.get('/:userId/profile', usersdata.getProfile);
 router.put('/:userId/profile', authguard, usersdata.updateProfile);
 router.get('/search', authguard, usersdata.searchUsers);
 
+// Profile status check
+router.get('/profile-status', authguard, usersdata.getProfileStatus);
+
 router.get('/:userId/followers/count', authguard, usersdata.getFollowerCount);
 router.get('/:userId/following/count', authguard, usersdata.getFollowingCount);
 router.get('/:userId/likes/count', authguard, usersdata.getLikesCount);
