@@ -4,6 +4,7 @@ const UserData = require('../models/UserData');
 const { createNotification } = require('./notificationController');
 const mongoose = require('mongoose');
 const { optimizeImage, validateImage, handleDataUrlImage } = require('../utils/imageOptimizer');
+const { baseUrl } = require('../config/baseUrl');
 
 // Create a new group
 const createGroup = async (req, res) => {
@@ -36,10 +37,16 @@ const createGroup = async (req, res) => {
     await group.populate('created_by', 'email');
     await group.populate('participants.user', 'email');
 
+    // Normalize avatar URL in response (only if stored as filename)
+    const responseGroup = group.toObject();
+    if (responseGroup.avatar && !responseGroup.avatar.startsWith('http') && !responseGroup.avatar.startsWith('data:')) {
+      responseGroup.avatar = `${baseUrl}/uploads/${responseGroup.avatar}`;
+    }
+
     res.status(201).json({
       status: 'success',
       message: 'Group created successfully',
-      group
+      group: responseGroup
     });
 
   } catch (error) {
@@ -60,9 +67,18 @@ const getUserGroups = async (req, res) => {
     .populate('participants.user', 'email')
     .sort({ updated_at: -1 });
 
+    // Map avatar filenames to full URLs
+    const mappedGroups = groups.map(g => {
+      const obj = g.toObject();
+      if (obj.avatar && !obj.avatar.startsWith('http') && !obj.avatar.startsWith('data:')) {
+        obj.avatar = `${baseUrl}/uploads/${obj.avatar}`;
+      }
+      return obj;
+    });
+
     res.json({
       status: 'success',
-      groups
+      groups: mappedGroups
     });
 
   } catch (error) {
@@ -91,9 +107,13 @@ const getGroup = async (req, res) => {
       return res.status(403).json({ status: 'error', message: 'Access denied' });
     }
 
+    const responseGroup = group.toObject();
+    if (responseGroup.avatar && !responseGroup.avatar.startsWith('http') && !responseGroup.avatar.startsWith('data:')) {
+      responseGroup.avatar = `${baseUrl}/uploads/${responseGroup.avatar}`;
+    }
     res.json({
       status: 'success',
-      group
+      group: responseGroup
     });
 
   } catch (error) {
@@ -133,10 +153,11 @@ const updateGroup = async (req, res) => {
         validateImage(req.file.buffer, req.file.mimetype);
         
         // Optimize image
+        // Store group avatars in a dedicated subfolder for organization
         avatarPath = await optimizeImage(
-          req.file.buffer, 
-          req.file.originalname, 
-          'uploads'
+          req.file.buffer,
+          `group_${req.file.originalname}`,
+          'uploads/group_avatars'
         );
         
         console.log(`✅ Group avatar optimized and saved: ${avatarPath}`);
@@ -155,7 +176,7 @@ const updateGroup = async (req, res) => {
         avatarPath = await handleDataUrlImage(
           avatar,
           `group_avatar_${Date.now()}.png`,
-          'uploads'
+          'uploads/group_avatars'
         );
         
         console.log(`✅ Data URL avatar processed and saved: ${avatarPath}`);
@@ -180,10 +201,19 @@ const updateGroup = async (req, res) => {
     await group.populate('created_by', 'email');
     await group.populate('participants.user', 'email');
 
+    const responseGroup = group.toObject();
+    if (responseGroup.avatar && !responseGroup.avatar.startsWith('http') && !responseGroup.avatar.startsWith('data:')) {
+      // If stored inside group_avatars subfolder, include that path
+      if (!responseGroup.avatar.includes('group_avatars')) {
+        responseGroup.avatar = `${baseUrl}/uploads/${responseGroup.avatar}`;
+      } else {
+        responseGroup.avatar = `${baseUrl}/uploads/group_avatars/${responseGroup.avatar}`.replace('/uploads/group_avatars/uploads/group_avatars', '/uploads/group_avatars');
+      }
+    }
     res.json({
       status: 'success',
       message: 'Group updated successfully',
-      group
+      group: responseGroup
     });
 
   } catch (error) {
