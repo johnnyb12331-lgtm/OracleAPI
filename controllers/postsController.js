@@ -425,6 +425,12 @@ const getPosts = async (req, res) => {
       }
       if (post.userDataId && post.userDataId.avatar && !post.userDataId.avatar.startsWith('http') && !post.userDataId.avatar.startsWith('data:') && post.userDataId.avatar.includes('.')) {
         post.userDataId.avatar = `${baseUrl}/uploads/${post.userDataId.avatar}`;
+      } else if (post.userDataId && post.userDataId.avatar && !post.userDataId.avatar.startsWith('http') && !post.userDataId.avatar.startsWith('data:')) {
+        // Convert raw base64 avatar data to data URL format
+        const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+        if (base64Pattern.test(post.userDataId.avatar) && post.userDataId.avatar.length > 100) {
+          post.userDataId.avatar = `data:image/jpeg;base64,${post.userDataId.avatar}`;
+        }
       }
     });
 

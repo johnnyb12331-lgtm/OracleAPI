@@ -130,6 +130,9 @@ app.use('/api/marketplace', marketplaceRoutes);
 const groupRoutes = require('./routes/groupRoute');
 app.use('/api/groups', groupRoutes);
 
+const securityRoutes = require('./routes/securityRoute');
+app.use('/api/security', securityRoutes);
+
 // Catch all handler: serve index.html for non-API routes (for SPA routing)
 // app.get('/(.*)', (req, res) => {
 //   if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
