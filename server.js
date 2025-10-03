@@ -41,7 +41,7 @@ const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 const customIP = '0.0.0.0';
 
 // Create base URL for API responses
-const { baseUrl } = require('./config/baseUrl');
+const baseUrl = require('./config/baseUrl');
 
 const Redis = require('ioredis');
 
@@ -67,9 +67,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Serve uploads BEFORE other static files to ensure images are served correctly
 app.use('/uploads', express.static('uploads'));
-
-// Serve Flutter web app static files
-app.use(express.static(path.join(__dirname, '../reeltalk/build/web')));
 
 // Rate limiting and slow-down protections
 const { globalApiLimiter, globalSlowDown, authLimiter, writeActionLimiter } = require('./middlewares/rateLimiters');
@@ -132,14 +129,18 @@ app.use('/api/groups', groupRoutes);
 const securityRoutes = require('./routes/securityRoute');
 app.use('/api/security', securityRoutes);
 
+// Serve Flutter web app static files AFTER all API routes to prevent intercepting API calls
+app.use(express.static(path.join(__dirname, '../reeltalk/build/web')));
+
 // Catch all handler: serve index.html for non-API routes (for SPA routing)
-// app.get('/(.*)', (req, res) => {
-//   if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
-//     res.sendFile(path.join(__dirname, '../reeltalk/build/web/index.html'));
-//   } else {
-//     res.status(404).send('Not Found');
-//   }
-// });
+app.get('*', (req, res) => {
+  // Only serve index.html for non-API and non-uploads routes
+  if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+    res.sendFile(path.join(__dirname, '../reeltalk/build/web/index.html'));
+  } else {
+    res.status(404).json({ status: 'error', message: 'API endpoint not found' });
+  }
+});
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {

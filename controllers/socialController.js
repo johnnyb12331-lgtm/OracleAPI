@@ -116,6 +116,30 @@ const followUser = async (req, res) => {
     const { userIdToFollow } = req.body;
     const followerUserId = req.user.userId;
 
+    if (!userIdToFollow) {
+      return res.status(400).json({ status: 'error', message: 'userIdToFollow is required' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userIdToFollow)) {
+      return res.status(400).json({ status: 'error', message: 'Invalid userIdToFollow' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(followerUserId)) {
+      return res.status(400).json({ status: 'error', message: 'Invalid follower user ID' });
+    }
+
+    // Check if the user to follow exists
+    const userToFollow = await User.findById(userIdToFollow);
+    if (!userToFollow) {
+      return res.status(404).json({ status: 'error', message: 'User to follow not found' });
+    }
+
+    // Check if the follower exists
+    const follower = await User.findById(followerUserId);
+    if (!follower) {
+      return res.status(404).json({ status: 'error', message: 'Follower user not found' });
+    }
+
     if (followerUserId === userIdToFollow) {
       return res.status(400).json({ status: 'error', message: 'Cannot follow yourself' });
     }
@@ -137,7 +161,7 @@ const followUser = async (req, res) => {
     await newFollow.save();
 
     // Create notification for the user being followed
-    const followerData = await UserData.findOne({ userId: new mongoose.Types.ObjectId(followerUserId) });
+    const followerData = await UserData.findOne({ userId: followerUserId });
     const followerName = followerData?.name || 'Someone';
     await createNotification(
       userIdToFollow,

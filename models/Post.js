@@ -13,7 +13,8 @@ const postSchema = new mongoose.Schema({
   },
   content: {
     type: String,
-    required: true,
+    required: false, // Allow posts with only media
+    default: '',
     maxlength: 1000
   },
   image: {

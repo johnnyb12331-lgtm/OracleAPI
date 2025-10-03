@@ -31,9 +31,6 @@
     "node-cache": "^5.1.2",
     "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.6",
-    "openai": "^5.23.0",
-    "pem": "^1.14.8",
-    "redis": "^5.8.1",
     "selfsigned": "^3.0.1",
     "sharp": "^0.34.4",
     "socket.io": "^4.8.1"

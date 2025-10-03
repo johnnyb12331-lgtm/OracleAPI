@@ -13,7 +13,7 @@ const { optimizeImage, validateImage, handleDataUrlImage } = require('../utils/i
 const CommentCache = require('../utils/commentCache');
 const contentModerationService = require('../services/contentModerationService');
 const gamificationController = require('./gamificationController');
-const { baseUrl } = require('../config/baseUrl');
+const baseUrl = require('../config/baseUrl');
 
 // Debug: Log baseUrl when module loads
 console.log('🔗 POSTS CONTROLLER - baseUrl loaded:', baseUrl);
@@ -206,7 +206,7 @@ const createPost = async (req, res) => {
     // Content moderation
     console.log('🔍 Starting content moderation...');
     const moderationResult = await contentModerationService.moderateContent(
-      content.trim(),
+      content ? content.trim() : '',
       optimizedImagePath ? path.join('uploads', optimizedImagePath) : null
     );
 
@@ -256,7 +256,7 @@ const createPost = async (req, res) => {
     const newPost = new Post({
       userDataId: userData._id,
       groupId: groupId ? new mongoose.Types.ObjectId(groupId) : null,
-      content: content.trim(),
+      content: content ? content.trim() : '', // Handle empty content for media-only posts
       image: optimizedImagePath,
       video: videoPath || video
     });
@@ -307,7 +307,7 @@ const createPost = async (req, res) => {
     // Populate user data
     let populatedPost;
     try {
-      populatedPost = await Post.findById(savedPost._id).populate('userDataId', 'name avatar');
+      populatedPost = await Post.findById(savedPost._id).populate('userDataId', 'name avatar userId');
     } catch (populateError) {
       console.error('Error populating post:', populateError);
       // Return the post without populated data as fallback
@@ -381,7 +381,7 @@ const getPosts = async (req, res) => {
       _id: { $nin: hiddenPosts },
       isHidden: { $ne: true } // Exclude posts hidden by moderation
     })
-      .populate('userDataId', 'name avatar')
+      .populate('userDataId', 'name avatar userId')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -470,7 +470,7 @@ const getPostById = async (req, res) => {
   try {
     const { postId } = req.params;
 
-    const post = await Post.findById(postId).populate('userDataId', 'name avatar');
+    const post = await Post.findById(postId).populate('userDataId', 'name avatar userId');
 
     if (!post) {
       return res.status(404).json({ status: 'error', message: 'Post not found' });
@@ -825,7 +825,7 @@ const getUserPosts = async (req, res) => {
     }
 
     const posts = await Post.find({ userDataId: userData._id })
-      .populate('userDataId', 'name avatar')
+      .populate('userDataId', 'name avatar userId')
       .sort({ created_at: -1 })
       .skip(skip)
       .limit(limit);
@@ -1109,7 +1109,7 @@ const searchPosts = async (req, res) => {
     }
 
     const posts = await Post.find(searchQuery)
-      .populate('userDataId', 'name avatar')
+      .populate('userDataId', 'name avatar userId')
       .select('content image video likesCount commentsCount created_at userDataId')
       .limit(parseInt(limit))
       .sort({ score: { $meta: 'textScore' }, created_at: -1 }); // Sort by relevance then by date
@@ -1237,7 +1237,7 @@ const getGroupPosts = async (req, res) => {
       _id: { $nin: hiddenPosts },
       isHidden: { $ne: true }
     })
-      .populate('userDataId', 'name avatar')
+      .populate('userDataId', 'name avatar userId')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
