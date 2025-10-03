@@ -54,6 +54,7 @@ const getProfile = async (req, res) => {
       dateOfBirth: (isOwnProfile || privacySettings.showBirthday !== false) ? userDataPlain?.dateOfBirth : null,
       gender: userDataPlain?.gender || '',
       avatar: userDataPlain?.avatar ? (userDataPlain.avatar.startsWith('http') || userDataPlain.avatar.startsWith('data:') ? userDataPlain.avatar : (userDataPlain.avatar.startsWith('avatar_') ? `${baseUrl}/uploads/avatars/${userDataPlain.avatar}` : `${baseUrl}/uploads/${userDataPlain.avatar}`)) : '',
+      coverPhoto: userDataPlain?.coverPhoto ? (userDataPlain.coverPhoto.startsWith('http') || userDataPlain.coverPhoto.startsWith('data:') ? userDataPlain.coverPhoto : (userDataPlain.coverPhoto.startsWith('cover_') ? `${baseUrl}/uploads/covers/${userDataPlain.coverPhoto}` : `${baseUrl}/uploads/${userDataPlain.coverPhoto}`)) : '',
       bio: userDataPlain?.bio || '',
       location: (isOwnProfile || privacySettings.showLocation !== false) ? userDataPlain?.location : null,
       interests: (isOwnProfile || privacySettings.showInterests !== false) ? userDataPlain?.interests || [] : [],
@@ -244,7 +245,7 @@ const getLikedPosts = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   const userId = req.params.userId;
-  const { name, dateOfBirth, gender, avatar, bio, location, interests, socialLinks, privacySettings } = req.body;
+  const { name, dateOfBirth, gender, avatar, coverPhoto, bio, location, interests, socialLinks, privacySettings } = req.body;
 
   try {
     const userData = await UserData.findOne({ userId: new mongoose.Types.ObjectId(userId) });
@@ -271,6 +272,27 @@ const updateProfile = async (req, res) => {
       } else {
         // Assume it's a filename or URL
         userData.avatar = avatar;
+      }
+    }
+
+    // Process cover photo if provided
+    if (coverPhoto !== undefined) {
+      if (coverPhoto.startsWith('data:image/')) {
+        // Handle data URL cover photo
+        try {
+          const processedCoverPhoto = await handleDataUrlImage(coverPhoto, 'cover', 'uploads/covers');
+          userData.coverPhoto = processedCoverPhoto;
+          console.log(`✅ Cover photo processed: ${processedCoverPhoto}`);
+        } catch (coverError) {
+          console.error('❌ Cover photo processing failed:', coverError);
+          return res.status(400).json({ status: 'error', message: 'Invalid cover photo image' });
+        }
+      } else if (coverPhoto.startsWith('data:') || coverPhoto.includes('base64')) {
+        // Handle other data URLs or base64
+        return res.status(400).json({ status: 'error', message: 'Cover photo must be a valid image data URL' });
+      } else {
+        // Assume it's a filename or URL
+        userData.coverPhoto = coverPhoto;
       }
     }
 

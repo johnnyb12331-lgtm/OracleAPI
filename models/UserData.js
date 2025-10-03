@@ -24,6 +24,10 @@ const userDataSchema = new mongoose.Schema({
     type: String,
     required: false
   },
+  coverPhoto: {
+    type: String,
+    required: false
+  },
   profileMedia: [{
     url: { type: String, required: true },
     type: { type: String, enum: ['image', 'video'], required: true },
