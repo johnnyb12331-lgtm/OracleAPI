@@ -19,6 +19,14 @@ const commentSchema = new mongoose.Schema({
     maxlength: 500,
     trim: true
   },
+  image: {
+    type: String,
+    default: null
+  },
+  video: {
+    type: String,
+    default: null
+  },
   likesCount: {
     type: Number,
     default: 0,

@@ -14,14 +14,14 @@ const createComment = async (req, res) => {
   console.log(`⏱️ Starting comment creation for postId: ${req.params.postId}`);
   try {
     const { postId } = req.params;
-    const { content } = req.body;
+    const { content, image, video } = req.body;
     const userId = req.user.userId;
 
-    // Validate input
-    if (!content || content.trim().length === 0) {
-      return res.status(400).json({ status: 'error', message: 'Comment content is required' });
+    // Validate input - require either content or media
+    if ((!content || content.trim().length === 0) && !image && !video) {
+      return res.status(400).json({ status: 'error', message: 'Comment must have content, image, or video' });
     }
-    if (content.length > 500) {
+    if (content && content.length > 500) {
       return res.status(400).json({ status: 'error', message: 'Comment too long (max 500 characters)' });
     }
 
@@ -55,31 +55,43 @@ const createComment = async (req, res) => {
       );
     }
 
-    // Content moderation for comments
-    console.log(`⏱️ ${Date.now() - startTime}ms: Starting comment content moderation...`);
-    const moderationResult = await contentModerationService.moderateContent(content.trim());
+    // Content moderation for comments (only if there's text content)
+    if (content && content.trim().length > 0) {
+      console.log(`⏱️ ${Date.now() - startTime}ms: Starting comment content moderation...`);
+      const moderationResult = await contentModerationService.moderateContent(content.trim());
 
-    if (moderationResult.overall_flagged) {
-      console.log(`⏱️ ${Date.now() - startTime}ms: Comment flagged by moderation`);
-      console.log('🚫 Comment content flagged by moderation:', moderationResult);
+      if (moderationResult.overall_flagged) {
+        console.log(`⏱️ ${Date.now() - startTime}ms: Comment flagged by moderation`);
+        console.log('🚫 Comment content flagged by moderation:', moderationResult);
 
-      return res.status(400).json({
-        status: 'error',
-        message: 'Your comment contains content that violates our community guidelines. Please review and modify your content.',
-        details: {
-          flagged_categories: moderationResult.blocked_categories,
-          text_flagged: moderationResult.text?.flagged || false
-        }
-      });
+        return res.status(400).json({
+          status: 'error',
+          message: 'Your comment contains content that violates our community guidelines. Please review and modify your content.',
+          details: {
+            flagged_categories: moderationResult.blocked_categories,
+            text_flagged: moderationResult.text?.flagged || false
+          }
+        });
+      }
+      console.log(`⏱️ ${Date.now() - startTime}ms: Comment content passed moderation`);
     }
-    console.log(`⏱️ ${Date.now() - startTime}ms: Comment content passed moderation`);
 
     // Create comment and update post count
-    const newComment = new Comment({
+    const commentData = {
       postId: new mongoose.Types.ObjectId(postId),
       userDataId: userDataToUse._id,
-      content: content.trim()
-    });
+      content: content ? content.trim() : ''
+    };
+    
+    // Add media if provided
+    if (image) {
+      commentData.image = image;
+    }
+    if (video) {
+      commentData.video = video;
+    }
+    
+    const newComment = new Comment(commentData);
     console.log(`⏱️ ${Date.now() - startTime}ms: Saving comment and updating post count`);
     const [savedComment] = await Promise.all([
       newComment.save(),
