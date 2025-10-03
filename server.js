@@ -129,16 +129,17 @@ app.use('/api/groups', groupRoutes);
 const securityRoutes = require('./routes/securityRoute');
 app.use('/api/security', securityRoutes);
 
-// Serve Flutter web app static files ONLY for non-API and non-uploads routes
+// Serve Flutter web app static files ONLY for GET requests to non-API and non-uploads routes
 app.use((req, res, next) => {
-  // Skip static file serving for API and uploads routes
-  if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+  // Skip static file serving for API and uploads routes, or non-GET requests
+  if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.method !== 'GET') {
     return next();
   }
   express.static(path.join(__dirname, '../reeltalk/build/web'))(req, res, next);
 });
 
 // Catch all handler: serve index.html for non-API routes (for SPA routing)
+// Only handle GET requests for the SPA
 app.get('*', (req, res) => {
   // Only serve index.html for non-API and non-uploads routes
   if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
@@ -151,6 +152,11 @@ app.get('*', (req, res) => {
   } else {
     res.status(404).json({ status: 'error', message: 'API endpoint not found' });
   }
+});
+
+// Handle unmatched API routes (POST, PUT, DELETE, etc.)
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ status: 'error', message: 'API endpoint not found' });
 });
 
 // Socket.IO connection handling
