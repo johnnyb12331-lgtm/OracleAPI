@@ -129,14 +129,25 @@ app.use('/api/groups', groupRoutes);
 const securityRoutes = require('./routes/securityRoute');
 app.use('/api/security', securityRoutes);
 
-// Serve Flutter web app static files AFTER all API routes to prevent intercepting API calls
-app.use(express.static(path.join(__dirname, '../reeltalk/build/web')));
+// Serve Flutter web app static files ONLY for non-API and non-uploads routes
+app.use((req, res, next) => {
+  // Skip static file serving for API and uploads routes
+  if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+    return next();
+  }
+  express.static(path.join(__dirname, '../reeltalk/build/web'))(req, res, next);
+});
 
 // Catch all handler: serve index.html for non-API routes (for SPA routing)
 app.get('*', (req, res) => {
   // Only serve index.html for non-API and non-uploads routes
   if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
-    res.sendFile(path.join(__dirname, '../reeltalk/build/web/index.html'));
+    const indexPath = path.join(__dirname, '../reeltalk/build/web/index.html');
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send('Flutter web build not found');
+    }
   } else {
     res.status(404).json({ status: 'error', message: 'API endpoint not found' });
   }
