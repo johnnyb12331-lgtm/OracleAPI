@@ -13,11 +13,19 @@ const commentSchema = new mongoose.Schema({
     required: true,
     index: true // Index for user-specific queries
   },
+  // Content is optional if an image or video is provided. Validation below enforces that
+  // at least one of content, image, or video exists (controller also enforces this).
   content: {
     type: String,
-    required: true,
     maxlength: 500,
-    trim: true
+    trim: true,
+    validate: {
+      validator: function(v) {
+        // Valid if there is trimmed text OR an image OR a video
+        return (v && v.trim().length > 0) || this.image || this.video;
+      },
+      message: 'Comment must have content, image, or video'
+    }
   },
   image: {
     type: String,

@@ -16,6 +16,13 @@ const createComment = async (req, res) => {
     const { postId } = req.params;
     const { content, image, video } = req.body;
     const userId = req.user.userId;
+    console.log('📝 Incoming comment payload:', {
+      postId,
+      hasContent: !!content && content.trim().length,
+      imageLength: image ? image.length : 0,
+      videoLength: video ? video.length : 0,
+      userId
+    });
 
     // Validate input - require either content or media
     if ((!content || content.trim().length === 0) && !image && !video) {
@@ -79,9 +86,11 @@ const createComment = async (req, res) => {
     // Create comment and update post count
     const commentData = {
       postId: new mongoose.Types.ObjectId(postId),
-      userDataId: userDataToUse._id,
-      content: content ? content.trim() : ''
+      userDataId: userDataToUse._id
     };
+    if (content && content.trim().length > 0) {
+      commentData.content = content.trim();
+    }
     
     // Add media if provided
     if (image) {
@@ -138,7 +147,17 @@ const createComment = async (req, res) => {
     res.status(201).json({ status: 'success', data: populatedComment });
   } catch (error) {
     const totalTime = Date.now() - startTime;
-    console.error(`⏱️ Comment creation failed after ${totalTime}ms:`, error);
+    console.error(`⏱️ Comment creation failed after ${totalTime}ms:`, {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      code: error.code,
+      validationErrors: error.errors ? Object.keys(error.errors).map(k => ({ field: k, message: error.errors[k].message })) : null
+    });
+    // Surface validation error details for debugging (can be restricted in production)
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ status: 'error', message: error.message });
+    }
     res.status(500).json({ status: 'error', message: 'Failed to create comment' });
   }
 };
