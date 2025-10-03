@@ -67,13 +67,38 @@ const getUserGroups = async (req, res) => {
     .populate('participants.user', 'email')
     .sort({ updated_at: -1 });
 
+    // Get message data for each group
+    const Message = require('../models/Message');
+    const groupsWithMessageData = await Promise.all(
+      groups.map(async (group) => {
+        // Get last message
+        const lastMessage = await Message.findOne({ group_id: group._id })
+          .populate('sender_id', 'email')
+          .sort({ sent_at: -1 })
+          .limit(1);
+
+        // Count unread messages
+        const unreadCount = await Message.countDocuments({
+          group_id: group._id,
+          sender_id: { $ne: userId },
+          is_read: false
+        });
+
+        const groupObj = group.toObject();
+        groupObj.unread_count = unreadCount;
+        groupObj.last_message = lastMessage ? lastMessage.text : null;
+        groupObj.last_message_time = lastMessage ? lastMessage.sent_at : null;
+
+        return groupObj;
+      })
+    );
+
     // Map avatar filenames to full URLs
-    const mappedGroups = groups.map(g => {
-      const obj = g.toObject();
-      if (obj.avatar && !obj.avatar.startsWith('http') && !obj.avatar.startsWith('data:')) {
-        obj.avatar = `${baseUrl}/uploads/${obj.avatar}`;
+    const mappedGroups = groupsWithMessageData.map(g => {
+      if (g.avatar && !g.avatar.startsWith('http') && !g.avatar.startsWith('data:')) {
+        g.avatar = `${baseUrl}/uploads/${g.avatar}`;
       }
-      return obj;
+      return g;
     });
 
     res.json({
